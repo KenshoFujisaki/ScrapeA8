@@ -47,10 +47,14 @@ def get_condition_of_listing_NG(doc)
   end
 end
 
-# 成果報酬の取得
-def get_reward(doc)
-  return doc.xpath('//*[text()="成果報酬"]/ancestor::tr[1]/td/div').
-    first.inner_text.gsub(/\"/,"\"\"")
+# 成果報酬等の取得
+def get_content_data(doc, list_id)
+  begin
+    return doc.xpath('//*[text()="' + list_id + '"]/ancestor::tr[1]/td/div').
+      first.inner_text.gsub(/\"/,"\"\"")
+  rescue
+    return "なし"
+  end
 end
 
 # -----------------------------------------------------------------------------
@@ -75,7 +79,7 @@ File.open(output_file_path, "w", :encoding => "SJIS") do |f|
     "リスティングNG条件",
     "リスティングNG条件厳しすぎないか？",
     "成果報酬",
-    "アクセプトするか？"
+    "備考"
   ].join(",")
 
   # 入力CSVファイルからプログラムIDの取得
@@ -103,14 +107,15 @@ File.open(output_file_path, "w", :encoding => "SJIS") do |f|
       ng_keyword, is_ok_listing_ng = get_condition_of_listing_NG(doc)
       f.print "\"#{ng_keyword}\","
       f.print "#{(is_ok_listing_ng ? "○" : "")},"
-      f.print "\"#{get_reward(doc)}\","
+      f.print "\"#{get_content_data(doc, '成果報酬')}\","
+      f.print "\"#{get_content_data(doc, '備考')}\","
 
       # アクセプト判定
       is_accepted = is_ok_reward && is_ok_listing_ng
     rescue => e
       STDERR.puts "[ERROR] #{program_id}: #{e} #{e.backtrace}"
     ensure
-      f.print "#{(is_accepted ? "○" : "")}\n"
+      f.print "\n"
       print "#{(is_accepted ? " is accepted." : "")}\n"
       sleep(1)
     end
